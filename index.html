@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Assignment N2</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+        <link rel='stylesheet' href='./css/moveme.css'>
+
+        <style>
+
+            #container {
+                position:absolute;
+                top:50px;
+                left:50px;
+                height:500px;
+                width:800px;
+                border: 1px solid black;
+            }
+
+            #ball {
+                position:absolute;
+                width:40px;
+                height:40px;
+                background-color:blue;
+                display:block;
+                border: 1px solid black;
+            }
+
+            #racket {
+                position:absolute;
+                width:80px;
+                height:7px;
+                background-color:red;
+                border: 1px solid black;
+                display:none;
+                top:480px;
+                left:360px;
+            }
+            #shape {
+                position:absolute;
+                width:10px;
+                height:10px;
+                background-color:green;
+                border: 1px solid black;
+                display:none;
+            }
+
+            #message {
+                position:absolute;
+                top:210px;
+                left:250px;
+                width:300px;
+                padding:10px;
+                text-align:center;
+                background-color:blue;
+                color:white;
+                border: 1px solid black;
+                font-family:monospace;
+                font-weight:bold;
+                display:none;
+                font-size:50px;
+            }
+
+        </style>
+
+    </head>
+    <body>
+        <div id="container">
+            <div id="ball"></div>
+            <div id="racket"></div>
+            <div id="shape"></div>
+            <div id="message"></div>
+        </div>
+
+        <script>
+            window.addEventListener("load", function load() {
+
+                window.removeEventListener("load", load);
+                function DOMElement(element, x_speed = 0, y_speed = 0) {
+
+                    this.element = document.getElementById(element);
+
+
+                    this.computedStyle = window.getComputedStyle(this.element);
+
+                    this.x = parseInt(this.computedStyle.getPropertyValue('left'), 10);
+                    this.y = parseInt(this.computedStyle.getPropertyValue('top'), 10);
+
+                    this.width = parseInt(this.computedStyle.getPropertyValue('width'), 10);
+                    this.height = parseInt(this.computedStyle.getPropertyValue('height'), 10);
+
+                    this.x_speed = x_speed;
+                    this.y_speed = y_speed;
+
+                    this.hide = function () {
+                        this.element.style.display = "none";
+                    };
+
+                    this.show = function (msg = null) {
+                        if (msg) {
+                            this.element.textContent = msg;
+                        }
+                        this.element.style.display = "block";
+                    };
+
+                    this.place = function (x = null, y = null) {
+                        if (x) {
+                            this.x = x;
+                        }
+                        if (y) {
+                            this.y = y;
+                        }
+                        this.element.style.left = this.x + "px";
+                        this.element.style.top = this.y + "px";
+                    };
+
+
+                    this.setDimensions = function (height = null, width = null) {
+                        if (width) {
+                            this.width = width;
+                            this.element.style.width = this.width + "px";
+                        }
+                        if (height) {
+                            this.height = height;
+                            this.element.style.height = this.height + "px";
+                    }
+                    };
+
+
+
+                    this.boundary = {
+                        width: this.element.parentElement.clientWidth,
+                        height: this.element.parentElement.clientHeight
+                    };
+
+
+                    this.collision = function (obj) {
+                        if (this.x < obj.x + obj.width && this.x + this.width > obj.x &&
+                                this.y < obj.y + obj.height && this.height + this.y > obj.y) {
+                            return true;
+                        }
+                        return false;
+                    };
+
+
+
+                }
+                ;
+
+
+
+                function Ball(element, x_speed, y_speed) {
+                    DOMElement.call(this, element, x_speed, y_speed);
+
+
+
+
+                    this.move = function (shape, racket) {
+                        this.x += this.x_speed;
+                        this.y += this.y_speed;
+
+                        if (this.x <= 0 || this.x + this.width >= this.boundary.width) {
+                            this.x_speed *= (-1);
+                        }
+
+                        if (this.y <= 0 || this.y + this.height >= this.boundary.height) {
+                            this.y_speed *= (-1);
+                        }
+
+
+
+                        if (this.y + this.height >= this.boundary.height) {
+                            gameOver("You lost!", "red");
+                            return;
+                        }
+
+
+
+                        if (shape && this.collision(shape)) {
+                            gameOver("You win!", "blue");
+                            return;
+                        }
+
+
+                        if (racket && this.collision(racket)) {
+                            this.y_speed *= -1;
+                        }
+
+
+
+                        this.place();
+
+                    }.bind(this);
+
+
+
+                    this.startMove = function (racket, shape) {
+                        if (!this.intervalID) {
+                            this.intervalID = setInterval(this.move.bind(this), 20, shape, racket);
+                        }
+                    };
+
+                    this.stopMove = function () {
+                        clearInterval(this.intervalID);
+                    };
+
+                }
+                ;
+
+
+                function Racket(element, x_speed, y_speed) {
+
+                    DOMElement.call(this, element, x_speed, y_speed);
+
+                    this.move = function (event) {
+                        if (event.key === "ArrowLeft" && this.x > 0) {
+                            this.x -= x_speed;
+                        } else if (event.key === "ArrowRight" && this.x + this.width < this.boundary.width) {
+                            this.x += x_speed;
+                        }
+                        this.place();
+                    };
+
+
+                    this.move = this.move.bind(this);
+
+
+                    window.addEventListener("keydown", this.move);
+
+                    window.addEventListener("keyup", function (event) {
+                        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                            this.x_speed = 0;
+                        }
+                        this.place();
+
+                    }.bind(this));
+
+
+
+
+                }
+                ;
+
+
+                var message = new DOMElement("message");
+                var container = new DOMElement("container");
+                var shape = new DOMElement("shape");
+
+
+                var maxX = container.width / 2 - 40;
+                var maxY = container.height / 2;
+
+                var shapeX = Math.random() * maxX + maxX;
+                var shapeY = Math.random() * maxY;
+
+                shape.place(shapeX, shapeY);
+
+
+
+                var shapeSize = Math.random() * (40 - 10) + 10;
+                shape.setDimensions(shapeSize, shapeSize);
+
+                shape.show();
+
+                var racket = new Racket("racket", 20, 0);
+                racket.show();
+
+                var ball = new Ball("ball", 2, 5);
+
+                ball.show();
+
+
+                ball.startMove(racket, shape);
+
+
+
+                function gameOver(msg, color) {
+
+                    ball.stopMove();
+                    ball.hide();
+
+                    shape.hide();
+
+                    message.element.style.backgroundColor = color;
+
+                    message.show(msg);
+
+                    window.removeEventListener("keydown", racket.move);
+                    window.removeEventListener("keyup", function (event) {
+                        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                            racket.x_speed = 0;
+                        }
+                    }.bind(racket));
+
+                    clearInterval(ball.intervalID);
+                    clearTimeout(timeoutID);
+
+                }
+
+
+
+                timeoutID = setTimeout(function () {
+                    gameOver("Draw", "green");
+                }, 20000);
+            });
+
+        </script>
+    </body>
+</html>
